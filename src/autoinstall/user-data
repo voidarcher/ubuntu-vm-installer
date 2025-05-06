@@ -1,0 +1,52 @@
+#cloud-config
+
+# To skip autoinstall confirmation
+bootcmd:
+  - cat /proc/cmdline > /tmp/cmdline
+  - sed -i'' 's/$/ autoinstall/g' /tmp/cmdline
+  - mount -n --bind -o ro /tmp/cmdline /proc/cmdline
+
+users:
+  - name: student
+    password: "$6$FOSLMm1wujXkLk/J$bGLa4Raw3iAf5tIsBlb0tUg9UGrhiw15un/EKNyC6p.sSswJMd17BnTwCGssyOD.l4o7KvTGOMS7P8b2wtm3S0"
+    groups: [sudo]
+    shell: /bin/bash
+    sudo: ALL=(ALL)
+    lock-passwd: false
+
+autoinstall:
+  version: 1
+  identity:
+    hostname: ubuntu-vm
+    realname: student
+    username: student
+    password: "$6$FOSLMm1wujXkLk/J$bGLa4Raw3iAf5tIsBlb0tUg9UGrhiw15un/EKNyC6p.sSswJMd17BnTwCGssyOD.l4o7KvTGOMS7P8b2wtm3S0"
+  keyboard:
+    layout: us
+  timezone: America/New_York
+  locale: en_US
+  network:
+    version: 2
+    ethernets:
+      enp0s3:
+        dhcp4: true
+  storage:
+    layout:
+      name: lvm
+  ssh:
+    install-server: true
+  snaps:
+    - name: firefox
+      channel: stable
+      classic: false
+
+  late-commands:
+    - curtin in-target --target=/target -- apt-get update
+    - curtin in-target --target=/target -- apt-get -y upgrade
+    - curtin in-target --target=/target -- systemctl enable systemd-timesyncd
+    - curtin in-target --target=/target -- systemctl start systemd-timesyncd
+    - curtin in-target --target=/target -- apt-get -y install build-essential git
+    - curtin in-target --target=/target -- apt-get -y install ubuntu-desktop
+    - curtin in-target --target=/target -- systemctl set-default graphical.target
+    - curtin in-target --target=/target -- umount /dev/sr1 || true
+    - curtin in-target --target=/target -- eject /dev/sr1 || true
